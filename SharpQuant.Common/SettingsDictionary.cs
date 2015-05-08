@@ -1,5 +1,4 @@
-﻿ 
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -7,24 +6,37 @@ using System.Xml.Serialization;
 
 namespace SharpQuant.Common
 {
-    public class SettingsDictionary : Dictionary<string, string>, IXmlSerializable
-    {
-        protected static string _valueSeparator = "]=[";
-        protected static string _itemSeparator = "\n";
+	public class SettingsDictionary : Dictionary<string, string>, IXmlSerializable
+	{
+		protected static string _valueSeparator = "]=[";
+		protected static string _itemSeparator = "\n";
 
-        public SettingsDictionary()
-        {
-        }
-
+		public SettingsDictionary() : base() {}
+		public SettingsDictionary(IDictionary<string, string> dict) : base(dict) {}
+		
         public void SetValue<T>(string key, T value)
         {
-            base[key] = value!=null ? value.ToString() : null;
+            var t = typeof(T);
+            if (t == typeof(DateTime))
+            {
+                base[key] = Convert.ToDateTime(value)
+                    .ToString("yyyyMMdd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+                return;
+            }
+            base[key] = value != null ? value.ToString() : null;
         }
 
         public T GetValue<T>(string key)
         {
             string value = base[key];
-            return (T)Convert.ChangeType(value, typeof(T));
+            var t = typeof(T);
+            if (t == typeof(DateTime))
+            {
+                var dat = value.Length == 8 ? DateTime.ParseExact(value, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture) :
+                    DateTime.ParseExact(value, "yyyyMMdd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+                return (T)Convert.ChangeType(dat, t);
+            }
+            return (T)Convert.ChangeType(value, t);
         }
 
         public T GetOrSet<T>(string key, T defaultValue)
@@ -32,7 +44,13 @@ namespace SharpQuant.Common
             string value;
             if (!base.TryGetValue(key, out value))
             {
-                value = defaultValue.ToString();
+                var t = typeof(T);
+
+                if (t == typeof(DateTime))
+                    value = Convert.ToDateTime(value)
+                        .ToString("yyyyMMdd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+                else
+                    value = defaultValue.ToString();
                 base.Add(key, value);
             }
 

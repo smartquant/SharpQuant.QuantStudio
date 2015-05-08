@@ -63,10 +63,12 @@
     <ProjectReference Include="..\SharpQuant.Common\SharpQuant.Common.csproj">
       <Project>{A6DE07ED-63E8-4062-9063-C26ED709FD10}</Project>
       <Name>SharpQuant.Common</Name>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\SharpQuant.UI\SharpQuant.UI.csproj">
       <Project>{D6F89F84-542B-465C-8249-5A40FFE43D67}</Project>
       <Name>SharpQuant.UI</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

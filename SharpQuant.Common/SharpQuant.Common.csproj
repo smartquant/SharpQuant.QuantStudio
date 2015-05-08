@@ -42,6 +42,7 @@
     <Compile Include="DB\CachedRepository.cs" />
     <Compile Include="DB\FullyCachedRepository.cs" />
     <Compile Include="DB\MemoryRepository.cs" />
+    <Compile Include="DB\Transaction.cs" />
     <Compile Include="FactoryT.cs" />
     <Compile Include="Cloner.cs" />
     <Compile Include="DB\AsyncRepositoryProvider.cs" />

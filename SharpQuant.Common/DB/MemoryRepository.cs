@@ -31,14 +31,15 @@ namespace SharpQuant.Common.DB
             //Not needed
         }
 
-        public void BeginTransaction(System.Data.IsolationLevel il = IsolationLevel.Unspecified)
+        public IDbTransaction BeginTransaction(System.Data.IsolationLevel il = IsolationLevel.Unspecified)
         {
-            if (_transactions!=null)
-                return;
-            _transactions = new Dictionary<int, T>(_list);
+            
+            if (_transactions==null)
+                _transactions = new Dictionary<int, T>(_list);
+            return new Transaction(() => CommitTransaction(), () => RollbackTransaction(), il, null);
         }
 
-        public void CommitTransaction()
+        void CommitTransaction()
         {
             if (_transactions==null)
                 return;
@@ -46,7 +47,7 @@ namespace SharpQuant.Common.DB
             _transactions = null;
         }
 
-        public void RollbackTransaction()
+        void RollbackTransaction()
         {
             if (_transactions == null)
                 return;

@@ -151,6 +151,7 @@
     <ProjectReference Include="..\SharpQuant.Common\SharpQuant.Common.csproj">
       <Project>{A6DE07ED-63E8-4062-9063-C26ED709FD10}</Project>
       <Name>SharpQuant.Common</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

@@ -39,7 +39,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
     <Reference Include="WeifenLuo.WinFormsUI.Docking">
-      <HintPath>..\packages\DockPanelSuite.2.9.0.0\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
+      <HintPath>..\..\..\SharpQuant\SharpQuant\packages\DockPanelSuite.2.9.0.0\lib\net40\WeifenLuo.WinFormsUI.Docking.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
@@ -73,10 +73,12 @@
     <ProjectReference Include="..\SharpQuant.Common\SharpQuant.Common.csproj">
       <Project>{A6DE07ED-63E8-4062-9063-C26ED709FD10}</Project>
       <Name>SharpQuant.Common</Name>
+      <Private>False</Private>
     </ProjectReference>
     <ProjectReference Include="..\SharpQuant.UI\SharpQuant.UI.csproj">
       <Project>{D6F89F84-542B-465C-8249-5A40FFE43D67}</Project>
       <Name>SharpQuant.UI</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

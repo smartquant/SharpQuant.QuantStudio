@@ -30,9 +30,7 @@ namespace SharpQuant.Common.DB
         void ClearCache();
 
         //transactions
-        void BeginTransaction(IsolationLevel il = IsolationLevel.Unspecified);
-        void CommitTransaction();
-        void RollbackTransaction();
+        IDbTransaction BeginTransaction(IsolationLevel il = IsolationLevel.Unspecified);
 
     }
 

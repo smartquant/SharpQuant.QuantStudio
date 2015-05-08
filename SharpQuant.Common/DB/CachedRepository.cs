@@ -175,20 +175,15 @@ namespace SharpQuant.Common.DB
             return SearchFor(e as Expression<Func<T, bool>>);
         }
 
-        public void BeginTransaction(IsolationLevel il = IsolationLevel.Unspecified)
+        public IDbTransaction BeginTransaction(IsolationLevel il = IsolationLevel.Unspecified)
         {
-            _repository.BeginTransaction(il);
+            using (var trans = _repository.BeginTransaction(il))
+            {
+                return new Transaction(() => trans.Commit(),
+                    () => { trans.Rollback(); ClearCache(); }, il, trans.Connection);
+            }
+            
         }
 
-        public void CommitTransaction()
-        {
-            _repository.CommitTransaction();
-        }
-
-        public void RollbackTransaction()
-        {
-            _repository.RollbackTransaction();
-            ClearCache();
-        }
     }
 }
