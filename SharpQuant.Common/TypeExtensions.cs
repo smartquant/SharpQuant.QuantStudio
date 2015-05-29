@@ -69,6 +69,10 @@ namespace SharpQuant.Common
             return parent;
         }
 
-
+        public static string GetShortQualifiedName(this Type t)
+        {
+            //Classname, Assembly, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+            return string.Join(",", t.AssemblyQualifiedName.Split(',').Take(2));
+        }
     }
 }

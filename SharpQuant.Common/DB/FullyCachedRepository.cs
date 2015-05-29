@@ -121,11 +121,10 @@ namespace SharpQuant.Common.DB
 
         public IDbTransaction BeginTransaction(IsolationLevel il = IsolationLevel.Unspecified)
         {
-            using (var trans = _repository.BeginTransaction(il))
-            {
-                return new Transaction(() => trans.Commit(),
-                    () => { trans.Rollback(); ClearCache(); }, il, trans.Connection);
-            }
+            var trans = _repository.BeginTransaction(il);
+            return new Transaction(() => trans.Commit(),
+                    () => { trans.Rollback(); ClearCache(); },
+                    ()=> trans.Dispose(), il, trans.Connection);
 
         }
     }

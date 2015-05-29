@@ -9,10 +9,11 @@ using System.ComponentModel;
 
 namespace SharpQuant.Common
 {
+
     /// <summary>
     /// Class to inject or retrieve Settings from a class' properties for serialization
     /// </summary>
-    public class Factory<T> where T:class
+    public class Factory<T> : IFactoryT<T> where T:class
     {
         IResolver _resolver;
 
@@ -71,7 +72,7 @@ namespace SharpQuant.Common
             foreach (var prop in properties.Where(p => p.DeclaringType == t && p.CanWrite))
             {
                 if (settings.ContainsKey(prop.Name))
-                    prop.SetValue(obj, settings.GetOrSet(prop.Name, prop.PropertyType), null);
+                    prop.SetValue(obj, settings.GetValue(prop.Name,prop.PropertyType), null);
             }
         }
 

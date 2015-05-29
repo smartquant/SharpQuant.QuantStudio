@@ -20,7 +20,7 @@ namespace SharpQuant.Common
             if (t == typeof(DateTime))
             {
                 base[key] = Convert.ToDateTime(value)
-                    .ToString("yyyyMMdd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+                    .ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
                 return;
             }
             base[key] = value != null ? value.ToString() : null;
@@ -32,13 +32,24 @@ namespace SharpQuant.Common
             var t = typeof(T);
             if (t == typeof(DateTime))
             {
-                var dat = value.Length == 8 ? DateTime.ParseExact(value, "yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture) :
-                    DateTime.ParseExact(value, "yyyyMMdd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+                var dat = value.Length == 10 ? DateTime.ParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) :
+                    DateTime.ParseExact(value, "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
                 return (T)Convert.ChangeType(dat, t);
             }
             return (T)Convert.ChangeType(value, t);
         }
 
+        public object GetValue(string key, Type type)
+        {
+            string value = base[key];
+            if (type == typeof(DateTime))
+            {
+                var dat = value.Length == 10 ? DateTime.ParseExact(value, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) :
+                    DateTime.ParseExact(value, "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+                return Convert.ChangeType(dat, type);
+            }
+            return Convert.ChangeType(value, type);
+        }
         public T GetOrSet<T>(string key, T defaultValue)
         {
             string value;

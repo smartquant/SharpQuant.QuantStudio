@@ -7,14 +7,16 @@ namespace SharpQuant.Common.DB
     {
         Action _commit;
         Action _rollback;
+        Action _dispose;
         IDbConnection _conn;
         IsolationLevel _isolationLevel;
 
-        public Transaction(Action commit, Action rollback, 
+        public Transaction(Action commit, Action rollback, Action dispose, 
             IsolationLevel il = System.Data.IsolationLevel.Unspecified, IDbConnection conn=null)
         {
             _commit = commit;
             _rollback = rollback;
+            _dispose = dispose;
             _isolationLevel = IsolationLevel;
             _conn = conn;
         }
@@ -41,6 +43,7 @@ namespace SharpQuant.Common.DB
 
         public void Dispose()
         {
+            if (_dispose != null) _dispose();
         }
     }
 }

@@ -14,6 +14,13 @@ namespace SharpQuant.Common
         T CreateInstance();
     }
 
+    interface IFactoryT<T> where T : class
+    {
+        T Create(string qualifiedName);
+        T Create(string qualifiedName, string settings);
+        T Create(Type t, SettingsDictionary settings);
+    }
+
     public class DefaultFactory<T> : IFactory<T>
     {
         public DefaultFactory()

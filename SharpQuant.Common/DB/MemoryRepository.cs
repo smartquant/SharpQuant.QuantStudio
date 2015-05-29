@@ -36,7 +36,7 @@ namespace SharpQuant.Common.DB
             
             if (_transactions==null)
                 _transactions = new Dictionary<int, T>(_list);
-            return new Transaction(() => CommitTransaction(), () => RollbackTransaction(), il, null);
+            return new Transaction(() => CommitTransaction(), () => RollbackTransaction(),null, il, null);
         }
 
         void CommitTransaction()
