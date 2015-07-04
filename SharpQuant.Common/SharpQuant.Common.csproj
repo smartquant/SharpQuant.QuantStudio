@@ -32,6 +32,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -41,6 +42,7 @@
   <ItemGroup>
     <Compile Include="DB\CachedRepository.cs" />
     <Compile Include="DB\FullyCachedRepository.cs" />
+    <Compile Include="DB\IgnorePropertyAttribute.cs" />
     <Compile Include="DB\MemoryRepository.cs" />
     <Compile Include="DB\Transaction.cs" />
     <Compile Include="FactoryT.cs" />
@@ -60,6 +62,7 @@
     <Compile Include="Validation\IValidator.cs" />
     <Compile Include="Validation\PropertyRule.cs" />
     <Compile Include="Validation\ValidationProvider.cs" />
+    <Compile Include="Validation\ValidatorBase.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

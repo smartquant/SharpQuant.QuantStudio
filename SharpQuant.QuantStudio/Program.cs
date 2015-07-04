@@ -16,6 +16,8 @@ namespace QuantStudio
 {
     static class Program
     {
+
+        static string[] _dllpaths;
         /// <summary>
         /// The main entry point for the application.
         /// </summary>
@@ -28,7 +30,8 @@ namespace QuantStudio
                 SingleInstance.ShowFirstInstance();
                 return;
             }
-
+            
+            _dllpaths = ConfigurationManager.AppSettings["dllpath"].Split(';');
 
             AppDomain.CurrentDomain.AssemblyResolve += new ResolveEventHandler(LoadAssemblies);
 
@@ -93,13 +96,15 @@ namespace QuantStudio
         static Assembly LoadAssemblies(object sender, ResolveEventArgs args)
         {
 
-            string dllpath =  ConfigurationManager.AppSettings["dllpath"];
-
+            
             string simpleName = new AssemblyName(args.Name).Name;
 
-            string path = dllpath + simpleName + ".dll";
+            foreach (var p in _dllpaths)
+            {
+                string path = System.IO.Path.Combine(p, simpleName + ".dll");
 
-            if (System.IO.File.Exists(path)) return Assembly.LoadFrom(path);
+                if (System.IO.File.Exists(path)) return Assembly.LoadFrom(path);
+            }
             return null;
 
         }
