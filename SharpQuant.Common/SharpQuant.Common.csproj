@@ -53,6 +53,13 @@
     <Compile Include="DB\IRepositoryProvider.cs" />
     <Compile Include="IFactory.cs" />
     <Compile Include="IResolver.cs" />
+    <Compile Include="Meta\AttributeDef.cs" />
+    <Compile Include="Meta\InterfaceDef.cs" />
+    <Compile Include="Meta\DefaultMetaData.cs" />
+    <Compile Include="Meta\MetaObject.cs" />
+    <Compile Include="Meta\PropertyDef.cs" />
+    <Compile Include="Meta\PropertyType.cs" />
+    <Compile Include="Meta\TypeEnum.cs" />
     <Compile Include="Platform.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SettingsDictionary.cs" />
