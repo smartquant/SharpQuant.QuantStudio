@@ -45,7 +45,7 @@ namespace SharpQuant.UI.PropertyGrid
             get { return _editedObject; }
         }
 
-        public void EditObject<T>(IPropertyEditableObject value) where T:class
+        public void EditObject<T>(IPropertyEditableObject value) where T : class
         {
             if (value != null && value.Action != EPropertyEditAction.None)
             {
@@ -70,10 +70,10 @@ namespace SharpQuant.UI.PropertyGrid
                 }
             }
 
-            if (_editedObject == null || _editedObject.Action == EPropertyEditAction.None) 
+            if (_editedObject == null || _editedObject.Action == EPropertyEditAction.None)
                 goto set_value;
-            if (!_editedObject.IsNew && !_editedObject.IsDirty) 
-                goto set_value; 
+            if (!_editedObject.IsNew && !_editedObject.IsDirty)
+                goto set_value;
 
 
             try
@@ -82,7 +82,7 @@ namespace SharpQuant.UI.PropertyGrid
                     SaveEditedObject();
                 else
                 {
-                    DialogResult result = _message.ShowUserMessage(UserMessageCategories.YesNo,"Save object", "Do you want to save the changes to the object?");
+                    DialogResult result = _message.ShowUserMessage(UserMessageCategories.YesNo, "Save object", "Do you want to save the changes to the object?");
                     if (result == System.Windows.Forms.DialogResult.OK || result == System.Windows.Forms.DialogResult.Yes)
                         SaveEditedObject();
                 }
@@ -96,8 +96,6 @@ namespace SharpQuant.UI.PropertyGrid
             propertyGrid.SelectedObject = (_editedObject == null) ? null : _editedObject.Object;
             CheckDBSaveStatus();
             return;
-
-
         }
 
         private void SaveEditedObject()
@@ -161,6 +159,13 @@ namespace SharpQuant.UI.PropertyGrid
                 tsbSave.Enabled = false;
             else
                 tsbSave.Enabled = true;
+        }
+
+        public void RefreshEditedObject()
+        {
+            
+            propertyGrid.SelectedObject = (_editedObject == null) ? null : _editedObject.Object;
+            CheckDBSaveStatus();
         }
 
         protected override void OnChangeSettings()

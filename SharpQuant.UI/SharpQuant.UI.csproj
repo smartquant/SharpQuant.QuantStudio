@@ -91,6 +91,13 @@
     <Compile Include="MenuTreeView\TreeMenuDef.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PropertyEditableObject.cs" />
+    <Compile Include="PropertyGrid\CollectionEditor.cs" />
+    <Compile Include="PropertyGrid\CollectionEditorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="PropertyGrid\CollectionEditorForm.Designer.cs">
+      <DependentUpon>CollectionEditorForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="PropertyGrid\PropertyWindow.cs">
       <SubType>UserControl</SubType>
     </Compile>
@@ -132,6 +139,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="MenuTreeView\MenuTreeViewControl.resx">
       <DependentUpon>MenuTreeViewControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PropertyGrid\CollectionEditorForm.resx">
+      <DependentUpon>CollectionEditorForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="PropertyGrid\PropertyWindow.resx">
       <DependentUpon>PropertyWindow.cs</DependentUpon>
