@@ -13,26 +13,42 @@ namespace SharpQuant.UI.PropertyGrid
 
     public class CollectionEditor : CollectionEditorBase<object>
     {
-        public override Func<object> Factory
-        {
-            get 
-            { 
-                return null; 
-            }
-        }
     }
 
-    public abstract class CollectionEditorBase<T> : System.Drawing.Design.UITypeEditor
+    public interface ICollectionEditor
     {
+        System.Collections.IEnumerable Items();
+        string ItemName(object item);
+        EditLevel EditLevel { get; set; }
 
-        public delegate void CollectionChangedEventHandler(object sender, object instance, object value);
-        public event CollectionChangedEventHandler CollectionChanged;
+        object Add(int position);
+        void Remove(object item);
+        void MoveItem(object item, int step);
+        void UndoChanges();
+    }
 
+    public abstract class CollectionEditorBase<T> : System.Drawing.Design.UITypeEditor, ICollectionEditor
+    {
+        #region fields
+        
         private ITypeDescriptorContext _context;
-
         private IWindowsFormsEditorService edSvc = null;
+        protected IList<T> _collection;
+        protected IList<T> _backup = new List<T>();
+        private EditLevel _EditLevel = EditLevel.FullEdit;
 
-        public abstract Func<T> Factory { get; }
+        #endregion
+
+
+
+        public virtual T Factory()
+        {
+            Type t = typeof(T);
+            T instance = (t.GetConstructor(Type.EmptyTypes) != null) ? (T)Activator.CreateInstance(t, new object[0])
+            : Activator.CreateInstance<T>();
+            return instance;
+        }
+
 
         public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
         {
@@ -41,25 +57,19 @@ namespace SharpQuant.UI.PropertyGrid
                 object originalValue = value;
                 _context = context;
                 edSvc = (IWindowsFormsEditorService)provider.GetService(typeof(IWindowsFormsEditorService));
+                _collection = value as IList<T>;
+                _backup = new List<T>(_collection);
 
                 if (edSvc != null)
                 {
                     CollectionEditorForm collEditorFrm = CreateForm();
-                    collEditorFrm.ItemAdded += new CollectionEditorForm.InstanceEventHandler(ItemAdded);
-                    collEditorFrm.ItemRemoved += new CollectionEditorForm.InstanceEventHandler(ItemRemoved);
-
-                    collEditorFrm.Collection = (System.Collections.IList)value;
-
+                    collEditorFrm.Init(this);
 
                     context.OnComponentChanging();
                     if (edSvc.ShowDialog(collEditorFrm) == DialogResult.OK)
                     {
-                        OnCollectionChanged(context.Instance, value);
                         context.OnComponentChanged();
                     }
-
-
-
                 }
             }
 
@@ -77,55 +87,72 @@ namespace SharpQuant.UI.PropertyGrid
         }
 
 
-        private void ItemAdded(object sender, object item)
-        {
-
-            if (_context != null && _context.Container != null)
-            {
-                IComponent icomp = item as IComponent;
-                if (icomp != null)
-                {
-                    _context.Container.Add(icomp);
-                }
-            }
-
-        }
-
-
-        private void ItemRemoved(object sender, object item)
-        {
-            if (_context != null && _context.Container != null)
-            {
-                IComponent icomp = item as IComponent;
-                if (icomp != null)
-                {
-                    _context.Container.Remove(icomp);
-                }
-            }
-
-        }
-
-
-        protected virtual void OnCollectionChanged(object instance, object value)
-        {
-            if (CollectionChanged != null)
-            {
-                CollectionChanged(this, instance, value);
-            }
-        }
-
-
         protected virtual CollectionEditorForm CreateForm()
         {
             var frm = new CollectionEditorForm();
-            var factory = Factory;
-
-            if (factory!=null)
-                frm.ObjectFactory = ()=>(object)Factory();
 
             return frm;
         }
 
+        #region ICollectionEditor
+
+        public EditLevel EditLevel
+        {
+            get { return _EditLevel; }
+            set { _EditLevel = value; }
+
+        }
+
+
+        public System.Collections.IEnumerable Items()
+        {
+            foreach (var item in _collection)
+                yield return item;
+        }
+
+        public virtual string ItemName(object obj)
+        {
+            var converter = TypeDescriptor.GetConverter(obj);
+            var text = converter.ConvertToString(obj);
+
+            return string.IsNullOrEmpty(text) ? "New" : text;
+        }
+
+        public virtual object Add(int position)
+        {
+            T item = Factory();
+            _collection.Insert(position, item);
+            return item;
+
+        }
+
+        public virtual void Remove(object item)
+        {
+            _collection.Remove((T)item);
+        }
+
+        public void MoveItem(object item, int step)
+        {
+            int index = _collection.IndexOf((T)item);
+            if (index > -1 && index < _collection.Count && index + step > -1 && index + step < _collection.Count)
+            {
+                int pos = index + step;
+
+                T obj = _collection[pos];
+                _collection[pos] = _collection[index];
+                _collection[index] = obj;
+            }
+
+        }
+
+        public virtual void UndoChanges()
+        {
+            _collection.Clear();
+            foreach (T item in _backup)
+                _collection.Add(item);
+        }
+
+        #endregion
 
     }
 }
