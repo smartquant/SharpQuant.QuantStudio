@@ -8,6 +8,9 @@ using System.Windows.Forms.Design;
 using System.Linq;
 using System.Text;
 
+using SharpQuant.Common.Validation;
+using SharpQuant.UI.UserMessage;
+
 namespace SharpQuant.UI.PropertyGrid
 {
 
@@ -25,9 +28,11 @@ namespace SharpQuant.UI.PropertyGrid
         void Remove(object item);
         void MoveItem(object item, int step);
         void UndoChanges();
+
+        bool Validate(object item);
     }
 
-    public abstract class CollectionEditorBase<T> : System.Drawing.Design.UITypeEditor, ICollectionEditor
+    public abstract class CollectionEditorBase<T> : System.Drawing.Design.UITypeEditor, ICollectionEditor where T:class
     {
         #region fields
         
@@ -37,11 +42,15 @@ namespace SharpQuant.UI.PropertyGrid
         protected IList<T> _backup = new List<T>();
         private EditLevel _EditLevel = EditLevel.FullEdit;
 
+        //Set these in in derived class
+        protected IValidationProvider _validationProvider;
+        protected IUserMessageService _message;
+
         #endregion
 
 
 
-        public virtual T Factory()
+        public virtual T Factory(ITypeDescriptorContext context)
         {
             Type t = typeof(T);
             T instance = (t.GetConstructor(Type.EmptyTypes) != null) ? (T)Activator.CreateInstance(t, new object[0])
@@ -49,6 +58,11 @@ namespace SharpQuant.UI.PropertyGrid
             return instance;
         }
 
+        public virtual string FormName()
+        {
+            var t = typeof(T);
+            return string.Format("{0}Editor",t.Name);
+        }
 
         public override object EditValue(ITypeDescriptorContext context, IServiceProvider provider, object value)
         {
@@ -90,6 +104,7 @@ namespace SharpQuant.UI.PropertyGrid
         protected virtual CollectionEditorForm CreateForm()
         {
             var frm = new CollectionEditorForm();
+            frm.Text = FormName();
 
             return frm;
         }
@@ -120,7 +135,7 @@ namespace SharpQuant.UI.PropertyGrid
 
         public virtual object Add(int position)
         {
-            T item = Factory();
+            T item = Factory(_context);
             _collection.Insert(position, item);
             return item;
 
@@ -152,7 +167,28 @@ namespace SharpQuant.UI.PropertyGrid
                 _collection.Add(item);
         }
 
+        public virtual bool Validate(object item)
+        {
+            if (_validationProvider != null && _message!=null)
+            {
+                var validator = _validationProvider.GetValidator<T>();
+                var value = item as T;
+                if (validator != null && value != null)
+                {
+                    if (validator.IsValid(value))
+                        return true;
+                    var msg = validator.GetErrorMessages(value);
+                    _message.ShowUserMessage(SharpQuant.UI.UserMessage.UserMessageCategories.Error, "Validation error", "Entity has some invalid values:\r\n" + string.Join("\r\n", msg));
+                    return false;
+                }
+            }
+            return true;
+        }
+
         #endregion
+
+
+
 
     }
 }

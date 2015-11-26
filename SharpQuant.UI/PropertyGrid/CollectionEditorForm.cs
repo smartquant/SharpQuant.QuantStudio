@@ -26,7 +26,7 @@ namespace SharpQuant.UI.PropertyGrid
 
         private bool _isdirty = false;
         private bool _collectionChanged = false;
-
+        private bool _updownremove = false;
         #endregion
 
         public CollectionEditorForm()
@@ -65,6 +65,8 @@ namespace SharpQuant.UI.PropertyGrid
 
         private void btnOK_Click(object sender, System.EventArgs e)
         {
+            if (propertyGrid.SelectedObject != null && !_attachedEditor.Validate(propertyGrid.SelectedObject))
+                return;
             NotifyParentIfDirty();
             this.Close();
         }
@@ -78,9 +80,11 @@ namespace SharpQuant.UI.PropertyGrid
 
         }
         private void btnAdd_Click(object sender, EventArgs e)
-        {
-            treeView.BeginUpdate();
+        {           
+            if (propertyGrid.SelectedObject != null && !_attachedEditor.Validate(propertyGrid.SelectedObject))
+                return;
 
+            treeView.BeginUpdate();
             //get the current  possition  and the parent collections to insert into
             var selTItem = treeView.SelectedNode;
 
@@ -92,7 +96,7 @@ namespace SharpQuant.UI.PropertyGrid
                 treeView.Nodes.Insert(position, node);
             else //empty collection
                 treeView.Nodes.Add(node);
-
+            _collectionChanged = true;
             treeView.SelectedNode = node;
 
             treeView.EndUpdate();
@@ -101,9 +105,11 @@ namespace SharpQuant.UI.PropertyGrid
         private void btnRemove_Click(object sender, System.EventArgs e)
         {
             treeView.BeginUpdate();
+            
             var selTItem = treeView.SelectedNode;
             if (selTItem != null)
             {
+                _updownremove = true;
                 int selIndex = selTItem.Index;
 
                 treeView.Nodes.Remove(selTItem);
@@ -122,6 +128,7 @@ namespace SharpQuant.UI.PropertyGrid
         private void btnUp_Click(object sender, System.EventArgs e)
         {
             treeView.BeginUpdate();
+            _updownremove = true;
             var selTItem = treeView.SelectedNode;
             if (selTItem != null && selTItem.PrevNode != null)
             {
@@ -139,6 +146,7 @@ namespace SharpQuant.UI.PropertyGrid
         private void btnDown_Click(object sender, System.EventArgs e)
         {
             treeView.BeginUpdate();
+            _updownremove = true;
             var selTItem = treeView.SelectedNode;
             if (selTItem != null && selTItem.NextNode != null)
             {
@@ -160,14 +168,33 @@ namespace SharpQuant.UI.PropertyGrid
 
             selTItem.Text = _attachedEditor.ItemName(selTItem.Tag);
             _isdirty = true;
-
+            //refresh grid too
+            RefreshGrid();
             treeView.EndUpdate();
+        }
+
+        private void RefreshGrid()
+        {
+            var temp = propertyGrid.SelectedObject;
+            propertyGrid.SelectedObject = null;
+            propertyGrid.SelectedObject = temp;
         }
 
         private void NotifyParentIfDirty()
         {
             if ((!_isdirty && !_collectionChanged) || this.Owner == null)
                 return;
+
+            //bubble up if we were called from another collection editor
+            var editor = this.Owner as CollectionEditorForm;
+            if (editor!=null)
+            {
+                editor._isdirty = _isdirty;
+                editor._collectionChanged = _collectionChanged;
+                editor.Refresh();
+                return;
+            }
+            //notify top PropertyWindow if available
             var grid = this.Owner.Controls.OfType<PropertyWindow>().FirstOrDefault();
             if (grid == null)
                 return;
@@ -178,11 +205,17 @@ namespace SharpQuant.UI.PropertyGrid
 
         private void treeView_BeforeSelect(object sender, TreeViewCancelEventArgs e)
         {
-            propertyGrid.SelectedObject = e.Node.Tag;
+         
+            if (!_updownremove && propertyGrid.SelectedObject!=null && !propertyGrid.SelectedObject.Equals(e.Node.Tag) && !_attachedEditor.Validate(propertyGrid.SelectedObject))
+                e.Cancel = true;
+            else
+                propertyGrid.SelectedObject = e.Node.Tag;
+            _updownremove = false;
         }
 
 
         #endregion
+
 
     }
 
