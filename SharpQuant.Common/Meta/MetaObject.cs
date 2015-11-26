@@ -8,8 +8,12 @@ using System.Threading.Tasks;
 
 namespace SharpQuant.Common.Meta
 {
+    public interface IMetaObject
+    {
+        IEnumerable<IInterfaceDef> InterfaceDefs();
+    }
 
-    public class MetaObject : DynamicObject, IDictionary<string, object>, ICustomTypeDescriptor
+    public class MetaObject : DynamicObject, IDictionary<string, object>, ICustomTypeDescriptor, IMetaObject
     {
         protected class ObjectDef
         {
@@ -46,10 +50,13 @@ namespace SharpQuant.Common.Meta
             }
         }
 
-        protected Dictionary<string, ObjectDef> _properties;
+        protected IDictionary<string, ObjectDef> _properties;
+        protected IEnumerable<IInterfaceDef> _interfaces;
+
         protected MetaObject()
         {
             _properties = new Dictionary<string, ObjectDef>();
+            _interfaces = new List<IInterfaceDef>();
         }
 
         public static MetaObject Create(IInterfaceDef idef)
@@ -59,8 +66,10 @@ namespace SharpQuant.Common.Meta
         public static MetaObject Create(IEnumerable<IInterfaceDef> interfaces)
         {
             var obj = new MetaObject();
-            
-            foreach(var idef in interfaces)
+            obj._interfaces = interfaces;
+
+            foreach (var idef in interfaces)
+            {
                 foreach (var prop in idef.Properties)
                 {
                     obj._properties.Add(prop.Name, new ObjectDef()
@@ -71,6 +80,7 @@ namespace SharpQuant.Common.Meta
                     });
 
                 }
+            }
 
             return obj;
 
@@ -91,9 +101,13 @@ namespace SharpQuant.Common.Meta
             return obj;
         }
 
-        public IEnumerable<IPropertyDef> PropertyDefs
+        public IEnumerable<IInterfaceDef> InterfaceDefs()
         {
-            get { return _properties.Select(p => p.Value.PropertyDef); }
+            return _interfaces;
+        }
+        public IEnumerable<IPropertyDef> PropertyDefs()
+        {
+            return _properties.Select(p => p.Value.PropertyDef);
         }
 
         #region DynamicObject overrides
@@ -371,7 +385,7 @@ namespace SharpQuant.Common.Meta
 
         public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == typeof(string) && value is MetaObject)
+            if (destinationType == typeof(string) && value is IMetaObject)
             {
                 return "Meta data";
             }
