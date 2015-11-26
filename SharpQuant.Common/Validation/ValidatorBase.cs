@@ -38,8 +38,9 @@ namespace SharpQuant.Common.Validation
 
         protected bool UseAttributes { get; set; }
 
-        protected ValidatorBase()
+        public ValidatorBase()
         {
+            UseAttributes = true;
         }
 
 

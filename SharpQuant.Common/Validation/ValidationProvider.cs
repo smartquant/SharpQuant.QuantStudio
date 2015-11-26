@@ -15,7 +15,8 @@ namespace SharpQuant.Common.Validation
             object v = null;
             if (!_validators.TryGetValue(t, out v))
             {
-                return null;
+                v = new ValidatorBase<T>();
+                AddValidator(v as IValidator<T>);
             }
             return v as IValidator<T>;
         }
@@ -23,7 +24,8 @@ namespace SharpQuant.Common.Validation
         public void AddValidator<T>(IValidator<T> validator) where T : class
         {
             Type t = typeof(T);
-            _validators[t] = validator;
+            lock(_validators)
+                _validators[t] = validator;
         }
 
     }
