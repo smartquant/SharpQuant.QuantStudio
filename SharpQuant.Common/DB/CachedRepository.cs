@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
@@ -28,16 +29,16 @@ namespace SharpQuant.Common.DB
     {
 
         
-        private static Dictionary<int, T> _cache;
+        private static Dictionary<long, T> _cache;
         private static object sync = new object();
         private static bool _get_all_called = false;
         //private static string _tableName;
         private static Type _type;
         private string _searchField;
-
+        Func<T, long> _getID;
         private IRepository<T> _repository;
 
-        public CachedRepository(IRepository<T> repository, string searchField = "CODE")
+        public CachedRepository(IRepository<T> repository, string searchField = "CODE", Func<T, long> getID = null)
         {
             _searchField = searchField;
 
@@ -45,17 +46,27 @@ namespace SharpQuant.Common.DB
             if (_type == null)
                 _type = typeof(T);
 
+            if (getID == null)
+            {
+                var prop = TypeDescriptor.GetProperties(_type).Find("id", true);
+                if (prop == null)
+                    _getID = t => t.GetHashCode();
+                else
+                    _getID = t => { var id = Convert.ToInt64(prop.GetValue(t)); return id == 0 ? t.GetHashCode() : id; };
+            }
+            else
+                _getID = getID;
             _repository = repository;
         }
 
 
-        private Dictionary<int, T> Cache
+        private Dictionary<long, T> Cache
         {
             get
             {
                 if (_cache == null)
                     lock (sync)
-                    _cache = new Dictionary<int, T>();
+                    _cache = new Dictionary<long, T>();
                 return _cache; 
             }
         }
@@ -63,7 +74,7 @@ namespace SharpQuant.Common.DB
         public void ClearCache()
         {
             lock (sync)
-                _cache = new Dictionary<int, T>();
+                _cache = new Dictionary<long, T>();
         }
 
         public IQueryable<T> SearchFor(Expression<Func<T, bool>> predicate)
@@ -78,7 +89,7 @@ namespace SharpQuant.Common.DB
                 result.ToList().ForEach(p =>
                 {
                     T entity = null;
-                    if (!cache.TryGetValue(p.GetHashCode(), out entity))
+                    if (!cache.TryGetValue(_getID(p), out entity))
                     {
                         entity = p;
                     }
@@ -100,7 +111,7 @@ namespace SharpQuant.Common.DB
                 lock (sync)
                     all.Select(p =>
                     {
-                        cache.Add(p.GetHashCode(), p);
+                        cache.Add(_getID(p), p);
                         return 0;
                     }).Sum();
             }
@@ -112,7 +123,7 @@ namespace SharpQuant.Common.DB
                 all.Select(p =>
                 {
                     T entity = null;
-                    if (!cache.TryGetValue(p.GetHashCode(), out entity))
+                    if (!cache.TryGetValue(_getID(p), out entity))
                     {
                         entity = p;
                     }
@@ -133,20 +144,20 @@ namespace SharpQuant.Common.DB
         {
             _repository.Insert(entity);
             lock(sync)
-            Cache.Add(entity.GetHashCode(), entity);
+                Cache.Add(_getID(entity), entity);
         }
 
         public void Delete(T entity)
         {
             _repository.Delete(entity);
             lock (sync)
-            Cache.Remove(entity.GetHashCode());
+                Cache.Remove(_getID(entity));
         }
 
         public T GetSingle(long ID)
         {
             T entity = null;
-            if (!Cache.TryGetValue((int)ID, out entity))
+            if (!Cache.TryGetValue(ID, out entity))
             {
                 entity = _repository.GetSingle(ID);
                 lock (sync)

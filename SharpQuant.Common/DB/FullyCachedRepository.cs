@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
@@ -23,34 +24,43 @@ namespace SharpQuant.Common.DB
     public class FullyCachedRepository<T> : IRepository<T> where T : class
     {
        
-        private static Dictionary<int, T> _cache;
+        private static Dictionary<long, T> _cache;
         private static object sync = new object();
         private static Type _type;
         private string _searchField;
-
+        private Func<T, long> _getID;
         private IRepository<T> _repository;
 
-        public FullyCachedRepository(IRepository<T> repository, string searchField = "CODE")
+        public FullyCachedRepository(IRepository<T> repository, string searchField = "CODE", Func<T, long> getID=null)
         {
             _searchField = searchField;
             //type members
             if (_type == null)
                 _type = typeof(T);
-
+            if (getID == null)
+            {
+                var prop = TypeDescriptor.GetProperties(_type).Find("id", true);
+                if (prop == null)
+                    _getID = t => t.GetHashCode();
+                else
+                    _getID = t => { var id = Convert.ToInt64(prop.GetValue(t)); return id == 0 ? t.GetHashCode() : id; };
+            }
+            else
+                _getID = getID;
             _repository = repository;
         }
 
 
-        private Dictionary<int, T> Cache
+        private Dictionary<long, T> Cache
         {
             get
             {
                 if (_cache==null)
                 lock (sync)
                 {
-                    _cache = new Dictionary<int, T>();
+                    _cache = new Dictionary<long, T>();
                     //We fetch all the objects at once
-                    _repository.GetAll().Select(p => { _cache.Add(p.GetHashCode(), p); return 1; }).Sum();
+                    _repository.GetAll().Select(p => { _cache.Add(_getID(p), p); return 0; }).Sum();
                 }
                 return _cache; 
             }
@@ -59,7 +69,7 @@ namespace SharpQuant.Common.DB
         public void ClearCache()
         {
             lock (sync)
-                _cache = new Dictionary<int, T>();
+                _cache = new Dictionary<long, T>();
         }
 
         public IQueryable<T> SearchFor(Expression<Func<T, bool>> predicate)
@@ -82,7 +92,7 @@ namespace SharpQuant.Common.DB
             _repository.Insert(entity);
             if (_cache != null)
             lock (sync)
-                Cache.Add(entity.GetHashCode(), entity);
+                Cache.Add(_getID(entity), entity);
         }
 
         public void Delete(T entity)
@@ -90,7 +100,7 @@ namespace SharpQuant.Common.DB
             _repository.Delete(entity);
             if (_cache != null)
             lock(sync)
-                Cache.Remove(entity.GetHashCode());
+                Cache.Remove(_getID(entity));
         }
 
         public T Create()
@@ -101,7 +111,7 @@ namespace SharpQuant.Common.DB
         public T GetSingle(long ID)
         {
             T record;
-            if (Cache.TryGetValue((int)ID,out record))
+            if (Cache.TryGetValue(ID,out record))
                 return record;
             return default(T);
         }
