@@ -9,6 +9,7 @@ namespace SharpQuant.Common.Meta
 {
     public interface IInterfaceDef
     {
+        string CODE { get; }
         string Name { get; }
         string Description { get; }
         IList<IPropertyDef> Properties { get; }

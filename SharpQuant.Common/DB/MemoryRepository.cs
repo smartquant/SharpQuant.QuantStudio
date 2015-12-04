@@ -1,28 +1,41 @@
 ﻿using System;
 using System.Data;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Linq.Expressions;
 
 namespace SharpQuant.Common.DB
 {
-    public class MemoryRepository<T> : IRepository<T> where T:class
+    public class MemoryRepository<T> : IUnitOfWork, IRepository<T> where T:class
     {
-        private Dictionary<int, T> _list;
-        private Dictionary<int, T> _transactions;      
+        private Dictionary<long, T> _list;
+        private Dictionary<long, T> _transactions;      
         private IFactory<T> _factory;
+        Func<T, long> _getID;
 
         private static Type _type;
         private string _searchField;
 
-        public MemoryRepository(IEnumerable<T> items, string searchField = "CODE", IFactory<T> factory=null)
+        public MemoryRepository(IEnumerable<T> items, string searchField = "CODE", IFactory<T> factory = null, Func<T, long> getID = null)
         {
-            _list = items.ToDictionary(t=>t.GetHashCode());         
+                  
             _factory = (factory != null) ? factory : new DefaultFactory<T>();
             if (_type==null)
                 _type = typeof(T);
 
+            if (getID == null)
+            {
+                var prop = TypeDescriptor.GetProperties(_type).Find("id", true);
+                if (prop == null)
+                    _getID = t => t.GetHashCode();
+                else
+                    _getID = t => { var id = Convert.ToInt64(prop.GetValue(t)); return id == 0 ? t.GetHashCode() : id; };
+            }
+            else
+                _getID = getID;
+            _list = items.ToDictionary(t => _getID(t),t=>t);   
             _searchField = searchField;
         }
 
@@ -35,7 +48,7 @@ namespace SharpQuant.Common.DB
         {
             
             if (_transactions==null)
-                _transactions = new Dictionary<int, T>(_list);
+                _transactions = new Dictionary<long, T>(_list);
             return new Transaction(() => CommitTransaction(), () => RollbackTransaction(),null, il, null);
         }
 
@@ -67,9 +80,9 @@ namespace SharpQuant.Common.DB
         public void Delete(T entity)
         {
             if (_transactions == null)
-                _list.Remove(entity.GetHashCode());
+                _list.Remove(_getID(entity));
             else
-                _transactions.Remove(entity.GetHashCode());
+                _transactions.Remove(_getID(entity));
         }
 
         public T GetSingle(long ID)
@@ -90,17 +103,17 @@ namespace SharpQuant.Common.DB
         public void Insert(T entity)
         {
             if (_transactions==null)
-                _list.Add(entity.GetHashCode(),entity);
+                _list.Add(_getID(entity), entity);
             else
-                _transactions.Add(entity.GetHashCode(), entity);
+                _transactions.Add(_getID(entity), entity);
         }
 
         public void Update(T entity)
         {
             if (_transactions == null)
-                _list[entity.GetHashCode()] = entity;
+                _list[_getID(entity)] = entity;
             else
-                _transactions[entity.GetHashCode()] = entity;
+                _transactions[_getID(entity)] = entity;
         }
 
         public IQueryable<T> SearchFor(System.Linq.Expressions.Expression<Func<T, bool>> predicate)

@@ -29,9 +29,6 @@ namespace SharpQuant.Common.DB
         //cache
         void ClearCache();
 
-        //transactions
-        IDbTransaction BeginTransaction(IsolationLevel il = IsolationLevel.Unspecified);
-
     }
 
     public interface IRepository
