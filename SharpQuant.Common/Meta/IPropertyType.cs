@@ -12,6 +12,7 @@ namespace SharpQuant.Common.Meta
         string CODE { get; }
         string QualifiedName { get; }
         Type Type { get; }
+        DbType DbType { get; }
     };
 
 

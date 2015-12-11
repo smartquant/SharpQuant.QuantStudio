@@ -47,7 +47,7 @@ namespace SharpQuant.UI.PropertyGrid
 
         public void EditObject<T>(IPropertyEditableObject value) where T : class
         {
-            if (value != null && value.Action != EPropertyEditAction.None)
+            if (value != null)// && value.Action != EPropertyEditAction.None)
             {
                 IValidator<T> validator = null;
                 if (_validationProvider != null)
@@ -132,18 +132,7 @@ namespace SharpQuant.UI.PropertyGrid
 
         private void tsbSave_Click(object sender, EventArgs e)
         {
-            try
-            {
-                //add validation here
-
-                SaveEditedObject();
-            }
-            catch (Exception ex)
-            {
-                
-                throw ex;
-            }
-            
+            SaveEditedObject();
         }
 
         private void tsbCancel_Click(object sender, EventArgs e)
