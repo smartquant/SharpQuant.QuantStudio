@@ -31,6 +31,7 @@ namespace SharpQuant.Common.Validation
         private Dictionary<string, PropertyRule<T>> _propertyRules;
         private List<ClassRule<T>> _classRules;
         private Dictionary<string, Func<T,object>> _accessors;
+        private bool _isCustomTypeDescriptor = false;
 
         protected Dictionary<string, Func<T, object>> Accessors { get { return _accessors ?? (_accessors = new Dictionary<string, Func<T, object>>()); } }
         protected Dictionary<string, PropertyRule<T>> PropertyRules { get { return _propertyRules ?? (_propertyRules = new Dictionary<string, PropertyRule<T>>()); } }
@@ -38,9 +39,11 @@ namespace SharpQuant.Common.Validation
 
         protected bool UseAttributes { get; set; }
 
+
         public ValidatorBase()
         {
             UseAttributes = true;
+            _isCustomTypeDescriptor = typeof(ICustomTypeDescriptor).IsAssignableFrom(typeof(T));
         }
 
 
@@ -69,7 +72,42 @@ namespace SharpQuant.Common.Validation
             ClassRules.Add(new ClassRule<T>(rule, message));
         }
 
+
+        
+
         //property level
+        bool ValidateProperty(T entity, string fieldname, List<ValidationResult> validationResults)
+        {
+            var vc = new ValidationContext(entity, null, null);
+
+            //This does not work correctly for types with custom ITypeDescriptor!
+            if (!_isCustomTypeDescriptor)
+            {
+                vc.MemberName = fieldname;
+                return Validator.TryValidateProperty(Accessors[fieldname](entity), vc, validationResults);
+            }
+
+            bool isValid = true;
+
+            foreach(var prop in TypeDescriptor.GetProperties(entity,false).Cast<PropertyDescriptor>())
+            {
+                if (prop.Name != fieldname)
+                    continue;
+                foreach(var attr in prop.Attributes)
+                {
+                    var val = attr as ValidationAttribute;
+                    if (val == null)
+                        continue;
+                    var v = prop.GetValue(entity);
+                    if (!Validator.TryValidateValue(v, vc, validationResults, new[] { val }))
+                    {
+                        isValid = false;
+                    }
+                }
+            }
+            return isValid;
+        }
+
         public bool IsValid(T entity, string fieldname)
         {
             bool isValid = true;
@@ -77,9 +115,7 @@ namespace SharpQuant.Common.Validation
             if (UseAttributes)
             {
                 var validationResults = new List<ValidationResult>();
-                var vc = new ValidationContext(entity, null, null);
-                vc.MemberName = fieldname;
-                isValid = Validator.TryValidateProperty(Accessors[fieldname](entity), vc, validationResults);
+                isValid = ValidateProperty(entity, fieldname, validationResults);
             }
             if (!isValid) return false;
 
@@ -98,9 +134,7 @@ namespace SharpQuant.Common.Validation
             if (UseAttributes)
             {
                 var validationResults = new List<ValidationResult>();
-                var vc = new ValidationContext(entity, null, null);
-                vc.MemberName = fieldname;
-                var isValid = Validator.TryValidateProperty(Accessors[fieldname](entity), vc, validationResults);
+                var isValid = ValidateProperty(entity, fieldname, validationResults);
 
                 if (validationResults.Count > 0)
                 {
@@ -123,18 +157,46 @@ namespace SharpQuant.Common.Validation
 
 
         //entity level
+        bool ValidateObject(T entity, List<ValidationResult> validationResults, bool allProperties)
+        {
+            var vc = new ValidationContext(entity, null, null);
+
+            //This does not work correctly for types with custom ITypeDescriptor!
+            if (!_isCustomTypeDescriptor)
+                return Validator.TryValidateObject(entity, vc, validationResults, allProperties);
+;
+            bool isValid = true;
+
+            foreach(var prop in TypeDescriptor.GetProperties(entity,false).Cast<PropertyDescriptor>())
+            {
+                foreach(var attr in prop.Attributes)
+                {
+                    var val = attr as ValidationAttribute;
+                    if (val == null)
+                        continue;
+                    var v = prop.GetValue(entity);
+                    vc.MemberName = prop.Name;
+                    if (!Validator.TryValidateValue(v, vc, validationResults, new[] { val }))
+                    {
+                        if (!allProperties)
+                            return false;
+                        isValid = false;
+                    }
+                }
+            }
+            return isValid;
+        }
 
         public bool IsValid(T entity)
         {
-            bool isvalid = true;
+            bool isValid = true;
 
             if (UseAttributes)
             {
                 var validationResults = new List<ValidationResult>();
-                var vc = new ValidationContext(entity, null, null);
-                var isValid = Validator.TryValidateObject(entity, vc, validationResults);
-                if (!isValid) return false;
+                isValid = ValidateObject(entity, validationResults, false);
             }
+            if (!isValid) return false;
 
             if (_propertyRules != null)
             {
@@ -154,7 +216,7 @@ namespace SharpQuant.Common.Validation
                 }
             }
 
-            return isvalid;
+            return isValid;
         }
 
         public IList<string> GetErrorMessages(T entity)
@@ -164,8 +226,7 @@ namespace SharpQuant.Common.Validation
             if (UseAttributes)
             {
                 var validationResults = new List<ValidationResult>();
-                var vc = new ValidationContext(entity, null, null);
-                var isValid = Validator.TryValidateObject(entity, vc, validationResults, true);
+                var isValid = ValidateObject(entity, validationResults, true);
 
                 list.AddRange(validationResults.Select(v => v.ErrorMessage));
             }
